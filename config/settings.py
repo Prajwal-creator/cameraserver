@@ -19,6 +19,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ENVIRONMENT VARIABLES
 # =========================================================
 
+# Local development: reads .env
+# Render: uses its Environment Variables
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -26,24 +28,44 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY
 # =========================================================
 
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-change-this-in-production"
-)
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
-DEBUG = os.getenv(
-    "DEBUG",
-    "True"
-).lower() == "true"
+if not SECRET_KEY:
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY environment variable is not set."
+    )
 
+
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+
+# =========================================================
+# ALLOWED HOSTS
+# =========================================================
 
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv(
-        "ALLOWED_HOSTS",
-        "127.0.0.1,localhost"
-    ).split(",")
-    if host.strip()
+    "localhost",
+    "127.0.0.1",
+    ".onrender.com",
+]
+
+# Also allow any hosts supplied through environment variables
+env_allowed_hosts = os.getenv("ALLOWED_HOSTS", "")
+
+if env_allowed_hosts:
+    for host in env_allowed_hosts.split(","):
+        host = host.strip()
+
+        if host and host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host)
+
+
+# =========================================================
+# CSRF
+# =========================================================
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.onrender.com",
 ]
 
 
@@ -56,7 +78,7 @@ INSTALLED_APPS = [
     # ASGI server
     "daphne",
 
-    # Django built-in applications
+    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -64,7 +86,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # Django Channels
+    # Channels
     "channels",
 
     # Camera application
@@ -116,7 +138,6 @@ TEMPLATES = [
         "APP_DIRS": True,
 
         "OPTIONS": {
-
             "context_processors": [
 
                 "django.template.context_processors.request",
@@ -203,9 +224,10 @@ USE_TZ = True
 # STATIC FILES
 # =========================================================
 
-# Static files
 STATIC_URL = "/static/"
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 # =========================================================
 # DEFAULT PRIMARY KEY
@@ -217,20 +239,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # =========================================================
 # CHANNELS
 # =========================================================
-#
-# NO REDIS REQUIRED.
-#
-# This is suitable for your current development setup:
-#
-# ESP32-CAM
-#      ↓
-# Django WebSocket
-#      ↓
-# Frame Manager
-#      ↓
-# Browser
-#
-# =========================================================
+
+# No Redis.
+# Suitable for the current single-server setup.
 
 CHANNEL_LAYERS = {
 
@@ -238,7 +249,6 @@ CHANNEL_LAYERS = {
 
         "BACKEND":
             "channels.layers.InMemoryChannelLayer",
-
     },
 }
 
