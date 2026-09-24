@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        ESP32-CAM Live Dashboard
+    </title>
+
+
+    <style>
+
+        /* =====================================================
+           GLOBAL
+        ===================================================== */
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100%;
+
+            background: #0b0b0b;
+            color: white;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+        }
+
+
+        body {
+            overflow-x: hidden;
+        }
+
+
+        /* =====================================================
+           HEADER
+        ===================================================== */
+
+        header {
+
+            width: 100%;
+
+            padding:
+                15px 20px;
+
+            background: #151515;
+
+            border-bottom:
+                1px solid #2d2d2d;
+        }
+
+
+        .header-inner {
+
+            max-width: 1200px;
+
+            margin: auto;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+        }
+
+
+        .title {
+
+            margin: 0;
+
+            font-size: 21px;
+
+            font-weight: 700;
+        }
+
+
+        .subtitle {
+
+            margin-top: 4px;
+
+            color: #888;
+
+            font-size: 12px;
+        }
+
+
+        /* =====================================================
+           MAIN CONTAINER
+        ===================================================== */
+
+        .container {
+
+            width: 100%;
+
+            max-width: 1200px;
+
+            margin: auto;
+
+            padding: 20px;
+        }
+
+
+        /* =====================================================
+           VIDEO CARD
+        ===================================================== */
+
+        .video-card {
+
+            width: 100%;
+
+            background: #151515;
+
+            border:
+                1px solid #292929;
+
+            border-radius: 12px;
+
+            padding: 12px;
+
+            box-shadow:
+                0 5px 25px
+                rgba(0, 0, 0, 0.35);
+        }
+
+
+        .video-header {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            margin-bottom: 10px;
+
+            gap: 10px;
+        }
+
+
+        .video-title {
+
+            font-size: 15px;
+
+            font-weight: 600;
+        }
+
+
+        .source-info {
+
+            color: #888;
+
+            font-size: 12px;
+        }
+
+
+        /* =====================================================
+           VIDEO AREA
+
+           Internal canvas:
+           160 × 120
+
+           Display:
+           640 × 480
+
+           CSS keeps 4:3 ratio.
+        ===================================================== */
+
+        .video-wrapper {
+
+            position: relative;
+
+            width: 100%;
+
+            max-width: 960px;
+
+            margin: auto;
+
+            aspect-ratio: 4 / 3;
+
+            background: #000;
+
+            border-radius: 8px;
+
+            overflow: hidden;
+        }
+
+
+        canvas {
+
+            display: block;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: #000;
+        }
+
+
+        /* =====================================================
+           LIVE BADGE
+        ===================================================== */
+
+        .live-badge {
+
+            position: absolute;
+
+            top: 12px;
+
+            left: 12px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            padding:
+                6px 10px;
+
+            border-radius: 20px;
+
+            background:
+                rgba(0, 0, 0, 0.75);
+
+            font-size: 12px;
+
+            font-weight: 600;
+        }
+
+
+        .live-dot {
+
+            width: 8px;
+
+            height: 8px;
+
+            border-radius: 50%;
+
+            background: #777;
+        }
+
+
+        .live-dot.live {
+
+            background: #35e66b;
+
+            box-shadow:
+                0 0 8px
+                rgba(53, 230, 107, 0.8);
+        }
+
+
+        .live-dot.connecting {
+
+            background: #ffd34d;
+        }
+
+
+        .live-dot.offline {
+
+            background: #ff4c4c;
+        }
+
+
+        /* =====================================================
+           VIDEO FPS BADGE
+        ===================================================== */
+
+        .video-fps {
+
+            position: absolute;
+
+            top: 12px;
+
+            right: 12px;
+
+            padding:
+                6px 10px;
+
+            border-radius: 20px;
+
+            background:
+                rgba(0, 0, 0, 0.75);
+
+            font-size: 12px;
+
+            font-weight: 600;
+        }
+
+
+        /* =====================================================
+           CONTROL BAR
+        ===================================================== */
+
+        .controls {
+
+            display: flex;
+
+            flex-wrap: wrap;
+
+            align-items: center;
+
+            gap: 10px;
+
+            margin-top: 12px;
+        }
+
+
+        .flash-button {
+
+            border: none;
+
+            padding:
+                11px 18px;
+
+            border-radius: 8px;
+
+            background: #262626;
+
+            color: white;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition:
+                0.2s ease;
+        }
+
+
+        .flash-button:hover {
+
+            background: #333;
+        }
+
+
+        .flash-button:active {
+
+            transform:
+                scale(0.97);
+        }
+
+
+        .flash-button.on {
+
+            background: #f5b800;
+
+            color: #111;
+
+            box-shadow:
+                0 0 15px
+                rgba(245, 184, 0, 0.3);
+        }
+
+
+        .flash-button:disabled {
+
+            opacity: 0.5;
+
+            cursor: not-allowed;
+        }
+
+
+        .connection-text {
+
+            color: #888;
+
+            font-size: 12px;
+
+            margin-left: auto;
+        }
+
+
+        /* =====================================================
+           STATS
+        ===================================================== */
+
+        .stats {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(
+                        150px,
+                        1fr
+                    )
+                );
+
+            gap: 12px;
+
+            margin-top: 15px;
+        }
+
+
+        .stat-card {
+
+            background: #171717;
+
+            border:
+                1px solid #292929;
+
+            border-radius: 10px;
+
+            padding: 14px;
+        }
+
+
+        .stat-label {
+
+            color: #777;
+
+            font-size: 11px;
+
+            text-transform: uppercase;
+
+            letter-spacing:
+                0.5px;
+
+            margin-bottom: 7px;
+        }
+
+
+        .stat-value {
+
+            font-size: 19px;
+
+            font-weight: 700;
+        }
+
+
+        .stat-small {
+
+            color: #888;
+
+            font-size: 11px;
+
+            margin-top: 4px;
+        }
+
+
+        .green {
+
+            color: #35e66b;
+        }
+
+
+        .red {
+
+            color: #ff4c4c;
+        }
+
+
+        .yellow {
+
+            color: #ffd34d;
+        }
+
+
+        /* =====================================================
+           MESSAGE
+        ===================================================== */
+
+        .message {
+
+            margin-top: 12px;
+
+            padding:
+                10px 12px;
+
+            border-radius: 8px;
+
+            background: #151515;
+
+            color: #888;
+
+            font-size: 12px;
+        }
+
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media (
+            max-width: 600px
+        ) {
+
+            header {
+
+                padding:
+                    13px 15px;
+            }
+
+
+            .title {
+
+                font-size: 18px;
+            }
+
+
+            .container {
+
+                padding:
+                    10px;
+            }
+
+
+            .video-card {
+
+                padding: 8px;
+
+                border-radius: 9px;
+            }
+
+
+            .video-header {
+
+                align-items:
+                    flex-start;
+
+                flex-direction:
+                    column;
+
+                gap: 3px;
+            }
+
+
+            .controls {
+
+                display: grid;
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+
+            .flash-button {
+
+                width: 100%;
+
+                padding: 13px;
+            }
+
+
+            .connection-text {
+
+                margin-left: 0;
+            }
+
+
+            .stats {
+
+                grid-template-columns:
+                    repeat(
+                        2,
+                        1fr
+                    );
+
+                gap: 8px;
+            }
+
+
+            .stat-card {
+
+                padding: 11px;
+            }
+
+
+            .stat-value {
+
+                font-size: 16px;
+            }
+
+        }
+
+
+        @media (
+            max-width: 360px
+        ) {
+
+            .stats {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     HEADER
+===================================================== -->
+
+<header>
+
+    <div class="header-inner">
+
+        <div>
+
+            <h1 class="title">
+                ESP32-CAM Live Dashboard
+            </h1>
+
+            <div class="subtitle">
+                Real-time camera streaming
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<!-- =====================================================
+     MAIN
+===================================================== -->
+
+<main class="container">
+
+
+    <!-- =================================================
+         VIDEO CARD
+    ================================================== -->
+
+    <section class="video-card">
+
+
+        <div class="video-header">
+
+            <div class="video-title">
+
+                Camera:
+                <strong>
+                    esp32cam-01
+                </strong>
+
+            </div>
+
+
+            <div class="source-info">
+
+                Source:
+                160 × 120 RGB565
+                →
+                Display:
+                640 × 480
+
+            </div>
+
+        </div>
+
+
+        <!-- =============================================
+             VIDEO
+        ============================================== -->
+
+        <div class="video-wrapper">
+
+
+            <canvas
+                id="videoCanvas"
+                width="640"
+                height="480">
+            </canvas>
+
+
+            <!-- LIVE STATUS -->
+
+            <div
+                id="liveBadge"
+                class="live-badge">
+
+                <span
+                    id="liveDot"
+                    class="live-dot connecting">
+                </span>
+
+                <span id="connection">
+                    CONNECTING
+                </span>
+
+            </div>
+
+
+            <!-- FPS -->
+
+            <div class="video-fps">
+
+                FPS:
+                <span id="videoFPS">
+                    0.0
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =============================================
+             CONTROLS
+        ============================================== -->
+
+        <div class="controls">
+
+
+            <button
+                id="flashButton"
+                class="flash-button">
+
+                🔦
+                <span id="flashText">
+                    Flash OFF
+                </span>
+
+            </button>
+
+
+            <div
+                id="connectionText"
+                class="connection-text">
+
+                Connecting to camera...
+
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =================================================
+         STATISTICS
+    ================================================== -->
+
+    <section class="stats">
+
+
+        <!-- CONNECTION -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Camera
+            </div>
+
+            <div
+                id="status"
+                class="stat-value yellow">
+
+                Connecting
+
+            </div>
+
+            <div class="stat-small">
+                ESP32 connection
+            </div>
+
+        </div>
+
+
+        <!-- FPS -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                FPS
+            </div>
+
+            <div
+                id="fps"
+                class="stat-value">
+
+                0.0
+
+            </div>
+
+            <div class="stat-small">
+                Browser received
+            </div>
+
+        </div>
+
+
+        <!-- RESOLUTION -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Resolution
+            </div>
+
+            <div class="stat-value">
+
+                640 × 480
+
+            </div>
+
+            <div class="stat-small">
+                Display resolution
+            </div>
+
+        </div>
+
+
+        <!-- SOURCE -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                ESP32 Source
+            </div>
+
+            <div class="stat-value">
+
+                160 × 120
+
+            </div>
+
+            <div class="stat-small">
+                RGB565
+            </div>
+
+        </div>
+
+
+        <!-- FRAMES -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Frames
+            </div>
+
+            <div
+                id="frames"
+                class="stat-value">
+
+                0
+
+            </div>
+
+            <div class="stat-small">
+                Total received
+            </div>
+
+        </div>
+
+
+        <!-- FRAME SIZE -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Frame Size
+            </div>
+
+            <div
+                id="frameSize"
+                class="stat-value">
+
+                0 KB
+
+            </div>
+
+            <div class="stat-small">
+                RGB565 payload
+            </div>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =================================================
+         MESSAGE
+    ================================================== -->
+
+    <div
+        id="message"
+        class="message">
+
+        Initializing camera connection...
+
+    </div>
+
+
+</main>
+
+
+<script>
+
+
+/* =========================================================
+   CONFIGURATION
+========================================================= */
+
+
+/*
+ * ESP32 sends:
+ *
+ * 160 × 120
+ *
+ * RGB565:
+ *
+ * 2 bytes / pixel
+ *
+ * 160 × 120 × 2
+ *
+ * = 38,400 bytes
+ */
+
+const CAMERA_ID =
+    "esp32cam-01";
+
+
+const SOURCE_WIDTH =
+    160;
+
+
+const SOURCE_HEIGHT =
+    120;
+
+
+/*
+ * Browser display resolution.
+ *
+ * The original ESP32 image remains
+ * 160 × 120.
+ *
+ * We enlarge it to:
+ *
+ * 640 × 480
+ */
+
+const DISPLAY_WIDTH =
+    640;
+
+
+const DISPLAY_HEIGHT =
+    480;
+
+
+const EXPECTED_FRAME_SIZE =
+    SOURCE_WIDTH *
+    SOURCE_HEIGHT *
+    2;
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const canvas =
+    document.getElementById(
+        "videoCanvas"
+    );
+
+
+const ctx =
+    canvas.getContext(
+        "2d",
+        {
+            alpha: false
+        }
+    );
+
+
+const statusElement =
+    document.getElementById(
+        "status"
+    );
+
+
+const connectionElement =
+    document.getElementById(
+        "connection"
+    );
+
+
+const connectionText =
+    document.getElementById(
+        "connectionText"
+    );
+
+
+const liveDot =
+    document.getElementById(
+        "liveDot"
+    );
+
+
+const fpsElement =
+    document.getElementById(
+        "fps"
+    );
+
+
+const videoFPSElement =
+    document.getElementById(
+        "videoFPS"
+    );
+
+
+const framesElement =
+    document.getElementById(
+        "frames"
+    );
+
+
+const frameSizeElement =
+    document.getElementById(
+        "frameSize"
+    );
+
+
+const messageElement =
+    document.getElementById(
+        "message"
+    );
+
+
+const flashButton =
+    document.getElementById(
+        "flashButton"
+    );
+
+
+const flashText =
+    document.getElementById(
+        "flashText"
+    );
+
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
+
+/*
+ * Canvas itself is 640 × 480.
+ */
+
+canvas.width =
+    DISPLAY_WIDTH;
+
+
+canvas.height =
+    DISPLAY_HEIGHT;
+
+
+/*
+ * Small canvas stores the actual
+ * 160 × 120 RGB image.
+ */
+
+const sourceCanvas =
+    document.createElement(
+        "canvas"
+    );
+
+
+sourceCanvas.width =
+    SOURCE_WIDTH;
+
+
+sourceCanvas.height =
+    SOURCE_HEIGHT;
+
+
+const sourceCtx =
+    sourceCanvas.getContext(
+        "2d",
+        {
+            alpha: false
+        }
+    );
+
+
+/*
+ * Create ImageData ONLY ONCE.
+ *
+ * This avoids allocating memory
+ * for every frame.
+ */
+
+const imageData =
+    sourceCtx.createImageData(
+        SOURCE_WIDTH,
+        SOURCE_HEIGHT
+    );
+
+
+const pixels =
+    imageData.data;
+
+
+/*
+ * Disable smoothing so the original
+ * camera pixels are preserved.
+ */
+
+ctx.imageSmoothingEnabled =
+    false;
+
+
+/* =========================================================
+   FPS
+========================================================= */
+
+let frameCount = 0;
+
+let totalFrames = 0;
+
+let fpsStart =
+    performance.now();
+
+let currentFPS = 0;
+
+
+/* =========================================================
+   WEBSOCKET
+========================================================= */
+
+let socket = null;
+
+let reconnectTimer = null;
+
+let flashState = false;
+
+
+/* =========================================================
+   WEBSOCKET URL
+========================================================= */
+
+function getWebSocketURL() {
+
+    const protocol =
+        window.location.protocol ===
+        "https:"
+        ? "wss:"
+        : "ws:";
+
+
+    return (
+        protocol +
+        "//" +
+        window.location.host +
+        "/ws/camera/" +
+        CAMERA_ID +
+        "/view/"
+    );
+}
+
+
+/* =========================================================
+   CONNECTION STATE
+========================================================= */
+
+function setConnectionState(
+    state
+) {
+
+
+    if (
+        state === "live"
+    ) {
+
+        connectionElement.textContent =
+            "LIVE";
+
+
+        connectionElement.className =
+            "live-badge";
+
+
+        liveDot.className =
+            "live-dot live";
+
+
+        statusElement.textContent =
+            "LIVE";
+
+
+        statusElement.className =
+            "stat-value green";
+
+
+        connectionText.textContent =
+            "Camera connected";
+
+
+        messageElement.textContent =
+            "Live video stream connected.";
+
+    }
+
+
+    else if (
+        state === "connecting"
+    ) {
+
+        connectionElement.textContent =
+            "CONNECTING";
+
+
+        connectionElement.className =
+            "live-badge";
+
+
+        liveDot.className =
+            "live-dot connecting";
+
+
+        statusElement.textContent =
+            "Connecting";
+
+
+        statusElement.className =
+            "stat-value yellow";
+
+
+        connectionText.textContent =
+            "Connecting to camera...";
+
+
+        messageElement.textContent =
+            "Connecting to ESP32 camera...";
+
+    }
+
+
+    else {
+
+        connectionElement.textContent =
+            "OFFLINE";
+
+
+        connectionElement.className =
+            "live-badge";
+
+
+        liveDot.className =
+            "live-dot offline";
+
+
+        statusElement.textContent =
+            "OFFLINE";
+
+
+        statusElement.className =
+            "stat-value red";
+
+
+        connectionText.textContent =
+            "Camera disconnected";
+
+
+        messageElement.textContent =
+            "Camera disconnected. Reconnecting...";
+
+    }
+
+}
+
+
+/* =========================================================
+   CONNECT
+========================================================= */
+
+function connect() {
+
+
+    clearTimeout(
+        reconnectTimer
+    );
+
+
+    setConnectionState(
+        "connecting"
+    );
+
+
+    const url =
+        getWebSocketURL();
+
+
+    console.log(
+        "[WS] Connecting:",
+        url
+    );
+
+
+    socket =
+        new WebSocket(
+            url
+        );
+
+
+    /*
+     * ESP32 sends binary frames.
+     */
+
+    socket.binaryType =
+        "arraybuffer";
+
+
+    /* ==============================================
+       OPEN
+    ============================================== */
+
+    socket.onopen =
+        function() {
+
+            console.log(
+                "[WS] Connected"
+            );
+
+
+            setConnectionState(
+                "live"
+            );
+
+        };
+
+
+    /* ==============================================
+       MESSAGE
+    ============================================== */
+
+    socket.onmessage =
+        function(event) {
+
+
+            /*
+             * IMPORTANT:
+             *
+             * Django may send either:
+             *
+             * 1. Binary RGB565 frame
+             *
+             * 2. Text command response
+             *
+             */
+
+
+            if (
+                typeof event.data ===
+                "string"
+            ) {
+
+                handleTextMessage(
+                    event.data
+                );
+
+                return;
+
+            }
+
+
+            /*
+             * Binary frame
+             */
+
+            if (
+                event.data instanceof
+                ArrayBuffer
+            ) {
+
+                const buffer =
+                    new Uint8Array(
+                        event.data
+                    );
+
+
+                renderRGB565(
+                    buffer
+                );
+
+            }
+
+        };
+
+
+    /* ==============================================
+       CLOSE
+    ============================================== */
+
+    socket.onclose =
+        function() {
+
+            console.log(
+                "[WS] Disconnected"
+            );
+
+
+            setConnectionState(
+                "offline"
+            );
+
+
+            reconnectTimer =
+                setTimeout(
+                    connect,
+                    1000
+                );
+
+        };
+
+
+    /* ==============================================
+       ERROR
+    ============================================== */
+
+    socket.onerror =
+        function(error) {
+
+            console.error(
+                "[WS] Error:",
+                error
+            );
+
+        };
+
+}
+
+
+/* =========================================================
+   TEXT MESSAGE HANDLER
+========================================================= */
+
+function handleTextMessage(
+    message
+) {
+
+
+    console.log(
+        "[WS TEXT]",
+        message
+    );
+
+
+    if (
+        message ===
+        "flash_on_ok"
+    ) {
+
+        flashState =
+            true;
+
+
+        updateFlashUI();
+
+
+        messageElement.textContent =
+            "ESP32 flash LED turned ON.";
+
+    }
+
+
+    else if (
+        message ===
+        "flash_off_ok"
+    ) {
+
+        flashState =
+            false;
+
+
+        updateFlashUI();
+
+
+        messageElement.textContent =
+            "ESP32 flash LED turned OFF.";
+
+    }
+
+
+    else if (
+        message ===
+        "esp32_offline"
+    ) {
+
+        messageElement.textContent =
+            "ESP32 camera is offline.";
+
+    }
+
+}
+
+
+/* =========================================================
+   RGB565 → RGB888
+========================================================= */
+
+function renderRGB565(
+    buffer
+) {
+
+
+    /*
+     * Verify frame size.
+     */
+
+    if (
+        buffer.length !==
+        EXPECTED_FRAME_SIZE
+    ) {
+
+        console.warn(
+
+            "[FRAME] Invalid size:",
+            buffer.length,
+
+            "Expected:",
+            EXPECTED_FRAME_SIZE
+
+        );
+
+        return;
+
+    }
+
+
+    let src = 0;
+
+    let dst = 0;
+
+
+    /*
+     * Convert:
+     *
+     * RGB565
+     *
+     * → RGB888
+     */
+
+    for (
+        let i = 0;
+        i <
+        SOURCE_WIDTH *
+        SOURCE_HEIGHT;
+        i++
+    ) {
+
+
+        /*
+         * ESP32 sends RGB565
+         * high byte first.
+         */
+
+        const byte0 =
+            buffer[src++];
+
+
+        const byte1 =
+            buffer[src++];
+
+
+        /*
+         * Red
+         */
+
+        const red =
+            byte0 & 0xF8;
+
+
+        /*
+         * Green
+         */
+
+        const green =
+            (
+                (byte0 & 0x07)
+                << 5
+            ) |
+            (
+                (byte1 & 0xE0)
+                >> 3
+            );
+
+
+        /*
+         * Blue
+         */
+
+        const blue =
+            (
+                byte1 & 0x1F
+            ) << 3;
+
+
+        /*
+         * RGB888
+         */
+
+        pixels[dst++] =
+            red |
+            (red >> 5);
+
+
+        pixels[dst++] =
+            green |
+            (green >> 6);
+
+
+        pixels[dst++] =
+            blue |
+            (blue >> 5);
+
+
+        pixels[dst++] =
+            255;
+
+    }
+
+
+    /*
+     * Put 160 × 120 image
+     * into source canvas.
+     */
+
+    sourceCtx.putImageData(
+        imageData,
+        0,
+        0
+    );
+
+
+    /*
+     * Draw:
+     *
+     * 160 × 120
+     *
+     * →
+     *
+     * 640 × 480
+     */
+
+    ctx.drawImage(
+
+        sourceCanvas,
+
+        0,
+        0,
+        SOURCE_WIDTH,
+        SOURCE_HEIGHT,
+
+        0,
+        0,
+        DISPLAY_WIDTH,
+        DISPLAY_HEIGHT
+
+    );
+
+
+    /*
+     * Statistics
+     */
+
+    totalFrames++;
+
+    frameCount++;
+
+
+    framesElement.textContent =
+        totalFrames;
+
+
+    frameSizeElement.textContent =
+        (
+            buffer.length /
+            1024
+        ).toFixed(1)
+        + " KB";
+
+
+    updateFPS();
+
+}
+
+
+/* =========================================================
+   FPS
+========================================================= */
+
+function updateFPS() {
+
+
+    const now =
+        performance.now();
+
+
+    const elapsed =
+        now -
+        fpsStart;
+
+
+    if (
+        elapsed >= 1000
+    ) {
+
+
+        currentFPS =
+            frameCount /
+            (
+                elapsed /
+                1000
+            );
+
+
+        const fpsText =
+            currentFPS.toFixed(1);
+
+
+        fpsElement.textContent =
+            fpsText;
+
+
+        videoFPSElement.textContent =
+            fpsText;
+
+
+        frameCount = 0;
+
+        fpsStart = now;
+
+    }
+
+}
+
+
+/* =========================================================
+   FLASH UI
+========================================================= */
+
+function updateFlashUI() {
+
+
+    if (flashState) {
+
+        flashText.textContent =
+            "Flash ON";
+
+
+        flashButton.classList.add(
+            "on"
+        );
+
+    }
+
+    else {
+
+        flashText.textContent =
+            "Flash OFF";
+
+
+        flashButton.classList.remove(
+            "on"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FLASH CONTROL
+========================================================= */
+
+flashButton.onclick =
+    function() {
+
+
+        /*
+         * Browser must be connected
+         * before sending command.
+         */
+
+        if (
+            !socket ||
+            socket.readyState !==
+            WebSocket.OPEN
+        ) {
+
+            messageElement.textContent =
+                "Camera WebSocket is not connected.";
+
+            return;
+
+        }
+
+
+        /*
+         * Send command through
+         * existing Browser → Django
+         * WebSocket.
+         */
+
+        if (
+            flashState
+        ) {
+
+            socket.send(
+                "flash_off"
+            );
+
+        }
+
+        else {
+
+            socket.send(
+                "flash_on"
+            );
+
+        }
+
+    };
+
+
+/* =========================================================
+   START
+========================================================= */
+
+setConnectionState(
+    "connecting"
+);
+
+
+connect();
+
+
+</script>
+
+
+</body>
+
+</html>
